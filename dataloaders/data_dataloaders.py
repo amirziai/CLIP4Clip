@@ -278,7 +278,7 @@ def dataloader_matchcut_frame_train(args, tokenizer):
 
 
 def dataloader_matchcut_frame_test(args, tokenizer):
-    return _dataloader_matchcut_frame(args, 'test')
+    return _dataloader_matchcut_frame(args, 'validation')
 
 DATALOADER_DICT = {}
 # DATALOADER_DICT["msrvtt"] = {"train":dataloader_msrvtt_train, "val":dataloader_msrvtt_test, "test":None}
