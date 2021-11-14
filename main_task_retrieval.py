@@ -510,7 +510,7 @@ def main():
         test_dataloader, test_length = DATALOADER_DICT[args.datatype]["test"](args, tokenizer)
 
     if DATALOADER_DICT[args.datatype]["val"] is not None:
-        val_dataloader, val_length = DATALOADER_DICT[args.datatype]["val"](args, tokenizer, subset="val")
+        val_dataloader, val_length = DATALOADER_DICT[args.datatype]["val"](args, tokenizer)
     else:
         val_dataloader, val_length = test_dataloader, test_length
 
