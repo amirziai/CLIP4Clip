@@ -16,6 +16,7 @@ from torch.nn.utils.rnn import pad_packed_sequence, pack_padded_sequence
 logger = logging.getLogger(__name__)
 allgather = AllGather.apply
 
+
 class CLIP4ClipPreTrainedModel(PreTrainedModel, nn.Module):
     """ An abstract class to handle weights initialization and
         a simple interface for dowloading and loading pretrained models.
@@ -246,25 +247,39 @@ class CLIP4Clip(CLIP4ClipPreTrainedModel):
 
         self.apply(self.init_weights)
 
-    def forward(self, input_ids, token_type_ids, attention_mask, video, video_mask=None):
-        input_ids = input_ids.view(-1, input_ids.shape[-1])
-        token_type_ids = token_type_ids.view(-1, token_type_ids.shape[-1])
-        attention_mask = attention_mask.view(-1, attention_mask.shape[-1])
-        video_mask = video_mask.view(-1, video_mask.shape[-1])
+    @staticmethod
+    def _mask_view(mask):
+        return mask.view(-1, mask.shape[-1])
 
+    @staticmethod
+    def _video_reshape(video):
         # T x 3 x H x W
         video = torch.as_tensor(video).float()
         b, pair, bs, ts, channel, h, w = video.shape
         video = video.view(b * pair * bs * ts, channel, h, w)
         video_frame = bs * ts
+        return video, video_frame
 
-        sequence_output, visual_output = self.get_sequence_visual_output(input_ids, token_type_ids, attention_mask,
-                                                                         video, video_mask, shaped=True, video_frame=video_frame)
+    # def forward(self, input_ids, token_type_ids, attention_mask, video, video_mask=None):
+    def forward(self, v1, m1, v2, m2):
+        # input_ids = input_ids.view(-1, input_ids.shape[-1])
+        # token_type_ids = token_type_ids.view(-1, token_type_ids.shape[-1])
+        # attention_mask = attention_mask.view(-1, attention_mask.shape[-1])
+        # m2 = m2.view(-1, m2.shape[-1])
+        m1, m2 = self._mask_view(m1), self._mask_view(m2)
+        v1, video_frame = self._video_reshape(v1)
+        v2, _ = self._video_reshape(v2)
+
+        # sequence_output, visual_output = self.get_sequence_visual_output(input_ids, token_type_ids, attention_mask,
+        #  video, video_mask, shaped=True, video_frame=video_frame)
+        v1_out = self.get_visual_output(v1, m1, shaped=True, video_frame=video_frame)
+        v2_out = self.get_visual_output(v2, m2, shaped=True, video_frame=video_frame)
 
         if self.training:
             loss = 0.
-            sim_matrix, *_tmp = self.get_similarity_logits(sequence_output, visual_output, attention_mask, video_mask,
-                                                    shaped=True, loose_type=self.loose_type)
+            sim_matrix, *_tmp = self.get_similarity_logits(
+                v1_out, v2_out, m1, m2, shaped=True, loose_type=self.loose_type,
+            )
             sim_loss1 = self.loss_fct(sim_matrix)
             sim_loss2 = self.loss_fct(sim_matrix.T)
             sim_loss = (sim_loss1 + sim_loss2) / 2
@@ -300,22 +315,22 @@ class CLIP4Clip(CLIP4ClipPreTrainedModel):
 
         return visual_hidden
 
-    def get_sequence_visual_output(self, input_ids, token_type_ids, attention_mask, video, video_mask, shaped=False, video_frame=-1):
-        if shaped is False:
-            input_ids = input_ids.view(-1, input_ids.shape[-1])
-            token_type_ids = token_type_ids.view(-1, token_type_ids.shape[-1])
-            attention_mask = attention_mask.view(-1, attention_mask.shape[-1])
-            video_mask = video_mask.view(-1, video_mask.shape[-1])
-
-            video = torch.as_tensor(video).float()
-            b, pair, bs, ts, channel, h, w = video.shape
-            video = video.view(b * pair * bs * ts, channel, h, w)
-            video_frame = bs * ts
-
-        sequence_output = self.get_sequence_output(input_ids, token_type_ids, attention_mask, shaped=True)
-        visual_output = self.get_visual_output(video, video_mask, shaped=True, video_frame=video_frame)
-
-        return sequence_output, visual_output
+    # def get_sequence_visual_output(self, input_ids, token_type_ids, attention_mask, video, video_mask, shaped=False, video_frame=-1):
+    #     if shaped is False:
+    #         input_ids = input_ids.view(-1, input_ids.shape[-1])
+    #         token_type_ids = token_type_ids.view(-1, token_type_ids.shape[-1])
+    #         attention_mask = attention_mask.view(-1, attention_mask.shape[-1])
+    #         video_mask = video_mask.view(-1, video_mask.shape[-1])
+    #
+    #         video = torch.as_tensor(video).float()
+    #         b, pair, bs, ts, channel, h, w = video.shape
+    #         video = video.view(b * pair * bs * ts, channel, h, w)
+    #         video_frame = bs * ts
+    #
+    #     sequence_output = self.get_sequence_output(input_ids, token_type_ids, attention_mask, shaped=True)
+    #     visual_output = self.get_visual_output(video, video_mask, shaped=True, video_frame=video_frame)
+    #
+    #     return sequence_output, visual_output
 
     def _get_cross_output(self, sequence_output, visual_output, attention_mask, video_mask):
 

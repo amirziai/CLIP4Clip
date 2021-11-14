@@ -9,6 +9,7 @@ import numpy as np
 import pickle
 from dataloaders.rawvideo_util import RawVideoExtractor
 
+
 class MSVD_DataLoader(Dataset):
     """MSVD dataset loader."""
     def __init__(

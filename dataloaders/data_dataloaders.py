@@ -6,6 +6,8 @@ from dataloaders.dataloader_msvd_retrieval import MSVD_DataLoader
 from dataloaders.dataloader_lsmdc_retrieval import LSMDC_DataLoader
 from dataloaders.dataloader_activitynet_retrieval import ActivityNet_DataLoader
 from dataloaders.dataloader_didemo_retrieval import DiDeMo_DataLoader
+from dataloaders.dataloader_matchcut_frame import MatchCutFrameDataLoader
+
 
 def dataloader_msrvtt_train(args, tokenizer):
     msrvtt_dataset = MSRVTT_TrainDataLoader(
@@ -225,6 +227,7 @@ def dataloader_didemo_train(args, tokenizer):
 
     return dataloader, len(didemo_dataset), train_sampler
 
+
 def dataloader_didemo_test(args, tokenizer, subset="test"):
     didemo_testset = DiDeMo_DataLoader(
         subset=subset,
@@ -247,9 +250,44 @@ def dataloader_didemo_test(args, tokenizer, subset="test"):
     return dataloader_didemo, len(didemo_testset)
 
 
+def _dataloader_matchcut_frame(args, partition):
+    train = partition == 'train'
+    ds = MatchCutFrameDataLoader(
+        partition=partition,
+        frame_rate=args.feature_framerate,
+        image_size=180,  # TODO: push this upstream
+        max_frames=args.max_frames,
+        slice_framepos=args.slice_framepos,
+        frame_order=args.train_frame_order if train else args.eval_frame_order,
+    )
+    sampler = torch.utils.data.distributed.DistributedSampler(ds)
+    dl = DataLoader(
+        ds,
+        batch_size=args.batch_size // args.n_gpu if train else args.args.batch_size_val,
+        num_workers=args.num_thread_reader,
+        pin_memory=False,
+        shuffle=(sampler is None) if train else False,
+        sampler=sampler if train else None,
+        drop_last=train,
+    )
+    return dl, list(ds), sampler
+
+
+def dataloader_matchcut_frame_train(args, tokenizer):
+    return _dataloader_matchcut_frame(args, 'train')
+
+
+def dataloader_matchcut_frame_test(args, tokenizer):
+    return _dataloader_matchcut_frame(args, 'test')
+
 DATALOADER_DICT = {}
 DATALOADER_DICT["msrvtt"] = {"train":dataloader_msrvtt_train, "val":dataloader_msrvtt_test, "test":None}
 DATALOADER_DICT["msvd"] = {"train":dataloader_msvd_train, "val":dataloader_msvd_test, "test":dataloader_msvd_test}
 DATALOADER_DICT["lsmdc"] = {"train":dataloader_lsmdc_train, "val":dataloader_lsmdc_test, "test":dataloader_lsmdc_test}
 DATALOADER_DICT["activity"] = {"train":dataloader_activity_train, "val":dataloader_activity_test, "test":None}
 DATALOADER_DICT["didemo"] = {"train":dataloader_didemo_train, "val":dataloader_didemo_test, "test":dataloader_didemo_test}
+DATALOADER_DICT["matchcut_frame"] = {
+    "train": dataloader_matchcut_frame_train,
+    "val": dataloader_matchcut_frame_test,
+    "test": None,
+}
