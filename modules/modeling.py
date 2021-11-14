@@ -270,6 +270,13 @@ class CLIP4Clip(CLIP4ClipPreTrainedModel):
         v1, video_frame = self._video_reshape(v1)
         v2, _ = self._video_reshape(v2)
 
+        print('===')
+        print('inside of forward(...)')
+        print(m1.shape, m2.shape)
+        print(v1.shape, v2.shape)
+        print(video_frame)
+        print('===')
+
         # sequence_output, visual_output = self.get_sequence_visual_output(input_ids, token_type_ids, attention_mask,
         #  video, video_mask, shaped=True, video_frame=video_frame)
         v1_out = self.get_visual_output(v1, m1, shaped=True, video_frame=video_frame)
