@@ -75,7 +75,6 @@ class MatchCutFrameDataLoader(Dataset):
         return self.video_extractor.size
 
     def _get_video(self, video_path: str):
-        print('video path is', video_path)
         vid_data = self.video_extractor.get_video_data(video_path)['video']
         vid_slice = self.video_extractor.process_raw_data(vid_data)
         if self.max_frames < vid_slice.shape[0]:
