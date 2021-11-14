@@ -68,7 +68,7 @@ class MatchCutFrameDataLoader(Dataset):
         self.video_extractor = RawVideoExtractor(framerate=frame_rate, size=image_size)
 
     def __len__(self):
-        raise NotImplementedError
+        return len(self.pairs)
 
     @property
     def vid_size(self) -> int:
