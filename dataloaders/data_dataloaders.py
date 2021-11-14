@@ -255,7 +255,7 @@ def _dataloader_matchcut_frame(args, partition):
     ds = MatchCutFrameDataLoader(
         partition=partition,
         frame_rate=args.feature_framerate,
-        image_size=180,  # TODO: push this upstream
+        image_size=196,  # TODO: push this upstream
         max_frames=args.max_frames,
         slice_framepos=args.slice_framepos,
         frame_order=args.train_frame_order if train else args.eval_frame_order,

@@ -84,7 +84,8 @@ class MatchCutFrameDataLoader(Dataset):
             elif self.slice_framepos == 1:
                 vid_slice = vid_slice[-self.max_frames:, ...]
             else:
-                raise ValueError("do we need this?")
+                sample_idx = np.linspace(0, vid_slice.shape[0] - 1, num=self.max_frames, dtype=int)
+                vid_slice = vid_slice[sample_idx, ...]
 
         vid_slice = self.video_extractor.process_frame_order(vid_slice, frame_order=self.frame_order)
         slice_len = len(vid_slice)
