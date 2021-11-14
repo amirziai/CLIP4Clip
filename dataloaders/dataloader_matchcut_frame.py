@@ -8,7 +8,7 @@ import pickle
 from dataloaders.rawvideo_util import RawVideoExtractor
 
 
-base = 'TODO'
+base = '.'
 
 
 @dataclass(frozen=True)
