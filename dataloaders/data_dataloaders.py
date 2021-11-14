@@ -270,7 +270,10 @@ def _dataloader_matchcut_frame(args, partition):
         sampler=sampler if train else None,
         drop_last=train,
     )
-    return dl, list(ds), sampler
+    if train:
+        return dl, list(ds), sampler
+    else:
+        return dl, len(ds)
 
 
 def dataloader_matchcut_frame_train(args, tokenizer):
