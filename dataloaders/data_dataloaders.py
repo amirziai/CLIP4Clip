@@ -263,7 +263,7 @@ def _dataloader_matchcut_frame(args, partition):
     sampler = torch.utils.data.distributed.DistributedSampler(ds)
     dl = DataLoader(
         ds,
-        batch_size=args.batch_size // args.n_gpu if train else args.args.batch_size_val,
+        batch_size=args.batch_size // args.n_gpu if train else args.batch_size_val,
         num_workers=args.num_thread_reader,
         pin_memory=False,
         shuffle=(sampler is None) if train else False,
