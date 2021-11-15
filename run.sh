@@ -1,4 +1,5 @@
-python -m main_task_retrieval.py --do_train --num_thread_reader=4 \
+python -m torch.distributed.launch --nproc_per_node=1 \
+	main_task_retrieval.py --do_train --num_thread_reader=4 \
 	--epochs=5 --batch_size=4 --n_display=50 \
 	--output_dir ckpts/matchcut_frame \
 	--lr 1e-4 --max_words 32 --max_frames 12 --batch_size_val 16 \

@@ -282,12 +282,17 @@ class CLIP4Clip(CLIP4ClipPreTrainedModel):
         v1_out = self.get_visual_output(v1, m1, shaped=True, video_frame=video_frame)
         v2_out = self.get_visual_output(v2, m2, shaped=True, video_frame=video_frame)
 
+        print('v1_out', v1_out.shape)
+        print('v2_out', v1_out.shape)
+
         if self.training:
             loss = 0.
             sim_matrix, *_tmp = self.get_similarity_logits(
                 v1_out, v2_out, m1, m2, shaped=True, loose_type=self.loose_type,
             )
+            print('sim_matrix', type(sim_matrix), sim_matrix.shape)
             sim_loss1 = self.loss_fct(sim_matrix)
+            print('sim_loss1', sim_loss1.shape)
             sim_loss2 = self.loss_fct(sim_matrix.T)
             sim_loss = (sim_loss1 + sim_loss2) / 2
             loss += sim_loss
