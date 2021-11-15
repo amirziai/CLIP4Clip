@@ -309,11 +309,20 @@ def _run_on_single_gpu(model, batch_list_v1, batch_list_v2, batch_v1_out, batch_
             # video_mask, *_tmp = b2
             v2, m2 = b2
             v2_out = batch_v2_out[idx2]
-            b1b2_logits, *_tmp = model._v2v_sim(v1_out, v2_out, m1, m2, sim_header=model.sim_header)
+            print('run_on_single_gpu')
+            print('v1_out', v1_out.shape)
+            print('v2_out', v2_out.shape)
+            print('m1', m1.shape)
+            print('m2', m2.shape)
+            print('=')
+            b1b2_logits = model._v2v_sim(v1_out, v2_out, m1, m2, sim_header=model.sim_header)
             b1b2_logits = b1b2_logits.cpu().detach().numpy()
+            print('b1b2_logits', b1b2_logits)
             each_row.append(b1b2_logits)
         each_row = np.concatenate(tuple(each_row), axis=-1)
         sim_matrix.append(each_row)
+    print('sim_matrix', sim_matrix)
+    print('sim_matrix len', len(sim_matrix))
     return sim_matrix
 
 
