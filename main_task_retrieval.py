@@ -569,7 +569,7 @@ def main():
 
                 output_model_file = None
                 ## Uncomment if want to save checkpoint
-                # output_model_file = save_model(epoch, args, model, type_name="")
+                output_model_file = save_model(epoch, args, model, type_name="")
 
                 ## Run on val dataset, this process is *TIME-consuming*.
                 # logger.info("Eval on val dataset")
