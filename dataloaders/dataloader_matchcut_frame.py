@@ -40,12 +40,17 @@ class Video:
 class VideoPair:
     v1: Video
     v2: Video
+    label: bool = None
 
 
 def ds_from_path(path_csv: str) -> List[VideoPair]:
     df = pd.read_csv(path_csv)
     return [
-        VideoPair(Video.from_row(first=True, row=row), Video.from_row(first=False, row=row))
+        VideoPair(
+            Video.from_row(first=True, row=row),
+            Video.from_row(first=False, row=row),
+            row.get('label', None),
+        )
         for _, row in df.iterrows()
     ]
 
@@ -63,8 +68,8 @@ class MatchCutFrameDataLoader(Dataset):
         frame_rate: int,
         image_size: int,
         max_frames: int,
-        slice_framepos: int,  # TODO: what is this?
-        frame_order: int,  # TODO: what is this?
+        slice_framepos: int,
+        frame_order: int,
     ):
         self.partition = partition
         self.frame_rate = frame_rate
