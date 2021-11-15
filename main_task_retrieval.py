@@ -316,8 +316,8 @@ def _run_on_single_gpu(model, batch_list_v1, batch_list_v2, batch_v1_out, batch_
         sim_matrix.append(each_row)
     return sim_matrix
 
-def eval_epoch(args, model, test_dataloader, device, n_gpu):
 
+def eval_epoch(args, model, test_dataloader, device, n_gpu):
     if hasattr(model, 'module'):
         model = model.module.to(device)
     else:

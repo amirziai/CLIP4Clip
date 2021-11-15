@@ -287,9 +287,10 @@ class CLIP4Clip(CLIP4ClipPreTrainedModel):
 
         if self.training:
             loss = 0.
-            sim_matrix, *_tmp = self.get_similarity_logits(
-                v1_out, v2_out, m1, m2, shaped=True, loose_type=self.loose_type,
-            )
+            # sim_matrix, *_tmp = self.get_similarity_logits(
+            #     v1_out, v2_out, m1, m2, shaped=True, loose_type=self.loose_type,
+            # )
+            sim_matrix = self._v2v_sim(v1_out, v2_out, m1, m2, self.loose_type)
             print('sim_matrix', type(sim_matrix), sim_matrix.shape)
             sim_loss1 = self.loss_fct(sim_matrix)
             print('sim_loss1', sim_loss1.shape)
@@ -324,7 +325,7 @@ class CLIP4Clip(CLIP4ClipPreTrainedModel):
         bs_pair = video_mask.size(0)
         visual_hidden = self.clip.encode_image(video, video_frame=video_frame).float()
         visual_hidden = visual_hidden.view(bs_pair, -1, visual_hidden.size(-1))
-
+        # bs x frames x 512
         return visual_hidden
 
     # def get_sequence_visual_output(self, input_ids, token_type_ids, attention_mask, video, video_mask, shaped=False, video_frame=-1):
@@ -377,6 +378,55 @@ class CLIP4Clip(CLIP4ClipPreTrainedModel):
         video_out = self._mean_pooling_for_similarity_visual(visual_output, video_mask)
 
         return text_out, video_out
+
+    def _loose_sim_vis(self, v_out, v_mask):
+        visual_output_original = v_out
+        seq_length = v_out.size(1)
+        position_ids = torch.arange(seq_length, dtype=torch.long, device=v_out.device)
+        position_ids = position_ids.unsqueeze(0).expand(v_out.size(0), -1)
+        frame_position_embeddings = self.frame_position_embeddings(position_ids)
+        visual_output = v_out + frame_position_embeddings
+
+        extended_video_mask = (1.0 - v_mask.unsqueeze(1)) * -1000000.0
+        extended_video_mask = extended_video_mask.expand(-1, v_mask.size(1), -1)
+        visual_output = visual_output.permute(1, 0, 2)  # NLD -> LND
+        visual_output = self.transformerClip(visual_output, extended_video_mask)
+        visual_output = visual_output.permute(1, 0, 2)  # LND -> NLD
+        visual_output = visual_output + visual_output_original
+        return visual_output
+
+    def _loose_sim_vis_train(self, v, m):
+        v_all = allgather(v, self.task_config)
+        m_all = allgather(m, self.task_config)
+        return v_all, m_all
+
+    def _loose_sim_vis_mean(self, v, m):
+        visual_output = v / v.norm(dim=-1, keepdim=True)
+        visual_output = self._mean_pooling_for_similarity_visual(visual_output, m)
+        visual_output = visual_output / visual_output.norm(dim=-1, keepdim=True)
+        return visual_output
+
+    def _v2v_sim(self, v1, v2, m1, m2, sim_header):
+        v1, v2 = v1.contiguous(), v2.contiguous()
+
+        if sim_header == "seqTransf":
+            # Sequential type: Transformer Encoder
+            v1_out = self._loose_sim_vis(v1, m1)
+            v2_out = self._loose_sim_vis(v2, m2)
+        else:
+            raise ValueError("not implemented yet")
+
+        if self.training:
+            v1_out, m1 = self._loose_sim_vis_train(v1_out, m1)
+            v2_out, m2 = self._loose_sim_vis_train(v2_out, m2)
+            torch.distributed.barrier()
+
+        v1_pool = self._loose_sim_vis_mean(v1_out, m1)
+        v2_pool = self._loose_sim_vis_mean(v2_out, m2)
+
+        logit_scale = self.clip.logit_scale.exp()
+        retrieve_logits = logit_scale * torch.matmul(v1_pool, v2_pool.t())
+        return retrieve_logits
 
     def _loose_similarity(self, sequence_output, visual_output, attention_mask, video_mask, sim_header="meanP"):
         sequence_output, visual_output = sequence_output.contiguous(), visual_output.contiguous()
