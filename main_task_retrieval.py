@@ -309,7 +309,7 @@ def _run_on_single_gpu(model, batch_list_v1, batch_list_v2, batch_v1_out, batch_
             # video_mask, *_tmp = b2
             v2, m2 = b2
             v2_out = batch_v2_out[idx2]
-            b1b2_logits, *_tmp = model.get_similarity_logits(v1_out, v2_out, m1, m2, loose_type=model.loose_type)
+            b1b2_logits, *_tmp = model._v2v_sim(v1_out, v2_out, m1, m2, loose_type=model.loose_type)
             b1b2_logits = b1b2_logits.cpu().detach().numpy()
             each_row.append(b1b2_logits)
         each_row = np.concatenate(tuple(each_row), axis=-1)
@@ -563,6 +563,7 @@ def main():
                 # logger.info("Eval on val dataset")
                 # R1 = eval_epoch(args, model, val_dataloader, device, n_gpu)
 
+                logger.info("Starting eval...")
                 R1 = eval_epoch(args, model, test_dataloader, device, n_gpu)
                 if best_score <= R1:
                     best_score = R1
