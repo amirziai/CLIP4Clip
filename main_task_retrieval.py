@@ -352,6 +352,9 @@ def eval_epoch(args, model, test_dataloader, device, n_gpu):
         # batch_sequence_output_list, batch_visual_output_list = [], []
         total_video_num = 0
 
+        def _fix_mask_shape(m):
+            return m.view(-1, m.shape[-1])
+
         # ----------------------------
         # 1. cache the features
         # ----------------------------
@@ -359,8 +362,8 @@ def eval_epoch(args, model, test_dataloader, device, n_gpu):
             batch = tuple(t.to(device) for t in batch)
             # input_ids, input_mask, segment_ids, video, video_mask = batch
             v1, m1, v2, m2 = batch
-            batch_list_v1.append((v1, m1))
-            batch_list_v2.append((v2, m2))
+            batch_list_v1.append((v1, _fix_mask_shape(m1)))
+            batch_list_v2.append((v2, _fix_mask_shape(m2)))
 
             # if multi_sentence_:
             #     # multi-sentences retrieval means: one clip has two or more descriptions.
