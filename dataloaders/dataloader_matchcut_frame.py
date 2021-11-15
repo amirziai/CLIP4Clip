@@ -26,6 +26,15 @@ class Video:
         pre = f"clip{1 if first else 2}"
         return cls(row[f"{pre}_package_id"], row[f"{pre}_start"], row[f"{pre}_end"])
 
+    def __lt__(self, other):
+        if self.package_id == other.package_id:
+            if self.start == other.start:
+                return self.end < other.end
+            else:
+                return self.start < other.start
+        else:
+            return self.package_id < other.package_id
+
 
 @dataclass
 class VideoPair:
