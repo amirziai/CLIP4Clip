@@ -172,9 +172,10 @@ def init_model(args, device, n_gpu, local_rank):
         model_state_dict = None
 
     # Prepare model
+    cache_dir = ''
+    model_state_dict = torch.load('modules/cross-base/cross_pytorch_model.bin')
     cache_dir = args.cache_dir if args.cache_dir else os.path.join(str(PYTORCH_PRETRAINED_BERT_CACHE), 'distributed')
     model = CLIP4Clip.from_pretrained(args.cross_model, cache_dir=cache_dir, state_dict=model_state_dict, task_config=args)
-
     model.to(device)
 
     return model
